@@ -1,6 +1,6 @@
 # Kernel Tuner tutorial
 
-A hands-on introduction to tuning GPU kernels using [Kernel Tuner](https://github.com/benvanwerkhoven/kernel_tuner). 
+A hands-on introduction to tuning GPU kernels using [Kernel Tuner](https://github.com/KernelTuner/kernel_tuner). 
 
 ## CUDA Hands-On Exercises
 
