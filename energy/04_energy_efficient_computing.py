@@ -11,9 +11,12 @@
 # Next, we import the required packages and set our defaults for plotting with Seaborn and Matplotlib:
 import kernel_tuner as kt
 from kernel_tuner.observers.nvml import NVMLObserver
+from pathlib import Path
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
+
+print("Imports successful")
 
 plt.rcParams["figure.figsize"] = [15, 8]
 sns.set_theme(style="whitegrid", palette="muted")
@@ -21,7 +24,21 @@ sns.set_context("paper", rc={"font.size": 10, "axes.titlesize": 9, "axes.labelsi
 sns.set(font_scale=1.6)
 
 
-# We start the tuning setup by defining the metrics we will use to measure performance.
+# We start by defining the kernel
+print("Importing kernel")
+path = Path("gemm")
+assert path.exists()
+kernel_string = ""
+files = ["common.opencl", "xgemm_part1.opencl", "xgemm_part2.opencl", "xgemm_part3.opencl"]
+for fname in files:
+    with Path(path, fname).open("r") as fp:
+        kernel_string += fp.read()
+
+
+print("Setting up tuning")
+
+
+# tuning setup by defining the metrics we will use to measure performance.
 def ops(m, n, k):
     """Computes the number of operations that the matrix multiply performs."""
     return (m * n * k * 2 + 2 * m * k) / 1e9
@@ -87,12 +104,12 @@ def get_optimal_config(
 ) -> tuple[dict, list]:
     res_opt, env_opt = kt.tune_kernel(
         "Xgemm",
-        "",
+        kernel_string,
         problem_size,
         [],
         tune_parameters,
         block_size_names=block_size_names.copy(),
-        simulation_mode=True,
+        simulation_mode=False,
         restrictions=restrict,
         grid_div_x=grid_div_x,
         grid_div_y=grid_div_y,
@@ -108,11 +125,16 @@ def get_optimal_config(
     return env_opt["best_config"], res_opt
 
 
+print("Setup successful")
+
+
 # We start by simply optimizing for the lowest possible time.
+print("Optimizing for performance...")
 config_race_to_idle, res_race_to_idle = get_optimal_config("time", tune_params, higher_is_better=False)
 config_race_to_idle["name"] = "race-to-idle (global)"
 
 # The next step is to use our previous time-optimal configuration, and re-tune only the clock frequencies for energy efficiency.
+print("Optimizing clock frequencies for energy efficiency...")
 tune_params_only_clocks = tune_params.copy()
 # create a new dictionary of tunable parameters with only the clock frequencies
 for key, value in config_race_to_idle.items():
@@ -124,11 +146,13 @@ config_race_to_idle_plus_clocks, _ = get_optimal_config("GFLOPS/W", tune_params_
 config_race_to_idle_plus_clocks["name"] = "race-to-idle + clocks"
 
 # The final step is to tune for energy efficiency globally.
+print("Optimizing for energy efficiency...")
 config_energy_to_solution, res_energy_to_solution = get_optimal_config("GFLOPS/W", tune_params)
 config_energy_to_solution["name"] = "energy-to-solution (global)"
 
 
 # We can now look at the results in terms of energy efficiency per configuration in a bar chart:
+print("Plotting the results")
 df = pd.DataFrame([config_race_to_idle, config_race_to_idle_plus_clocks, config_energy_to_solution])
 sns.barplot(x=df.nvml_energy, y=df.name, orient="h", hue=df.name, legend=False)
 plt.xlabel("Energy (J), lower is better")
@@ -136,6 +160,7 @@ plt.ylabel("")
 plt.title("Lowest energy configuration")
 plt.tight_layout()
 plt.savefig("04_energy_efficient_computing_barchart")
+plt.close()
 
 
 # Finally, we can also make a scatterplot to show the relation between energy and time of our three configurations.
