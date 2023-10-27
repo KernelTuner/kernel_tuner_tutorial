@@ -143,7 +143,9 @@ for key, value in config_race_to_idle.items():
         tune_params_only_clocks[key] = [value]
 
 # tune the clock frequencies for energy efficiency
-config_race_to_idle_plus_clocks, _ = get_optimal_config("GFLOPS/W", tune_params_only_clocks, strategy="brute_force")
+config_race_to_idle_plus_clocks, res_race_to_idle_plus_clocks = get_optimal_config(
+    "GFLOPS/W", tune_params_only_clocks, strategy="brute_force"
+)
 config_race_to_idle_plus_clocks["name"] = "race-to-idle + clocks"
 
 # The final step is to tune for energy efficiency globally.
@@ -180,6 +182,9 @@ sns.scatterplot(
     palette=sns.light_palette("midnightblue", as_cmap=True),
     legend=False,
 )
+
+df_time_clocks = pd.DataFrame(res_race_to_idle_plus_clocks)
+sns.scatterplot(x=df_time_clocks["GFLOPS/W"], y=df_time_clocks["GFLOP/s"], alpha=0.9, color="orange", legend=False)
 
 # plot the configurations tried when optimizing for energy
 df_energy = pd.DataFrame(res_energy_to_solution)
