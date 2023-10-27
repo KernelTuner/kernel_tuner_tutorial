@@ -5,7 +5,7 @@
 
 # First, make sure you have CUDA / OpenCL loaded on your system.
 # Next, download and instal the following dependencies from the command line (remove CUDA or OpenCL if you do not use it):
-# pip install kernel-tuner[tutorial,cuda,opencl]==1.0.0b3
+# pip install kernel-tuner[tutorial,cuda,opencl]==1.0.0b4
 # pip install seaborn~=0.13.0
 
 
